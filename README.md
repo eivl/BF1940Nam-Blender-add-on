@@ -12,7 +12,7 @@ The add-on is still in a very early stage.
 	- Export static objects
 	- Export light maps
 ## Usage:
-- download the add-on zip: https://github.com/Ahrkylien/BF1942-Blender-add-on/archive/refs/heads/main.zip
+- download the add-on zip: https://github.com/eivl/BF1940Nam-Blender-add-on/archive/refs/heads/main.zip
 - open Blender
 - in Blender go to: Edit -> Preferences -> Add-ons -> Install....
 - select the zip you just downloaded
