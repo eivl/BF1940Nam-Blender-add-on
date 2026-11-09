@@ -12,17 +12,17 @@ def unkownBytes(f,n):
 #    print('unknown: {}'.format(unknown))
     return(unknown)
 def sm_i(f,n=1,forceList=False):
-    res = struct.unpack('L'*n, f.read(4*n))
+    res = struct.unpack('<'+'I'*n, f.read(4*n))
     if n==1 and not forceList:
         return(res[0])
     return(res)
 def sm_i_short(f,n=1):
-    res = struct.unpack('H'*n, f.read(2*n))
+    res = struct.unpack('<'+'H'*n, f.read(2*n))
     if n==1:
         return(res[0])
     return(res)
 def sm_f(f,n=1):
-    res = struct.unpack('f'*n, f.read(4*n))
+    res = struct.unpack('<'+'f'*n, f.read(4*n))
     if n==1:
         return(res[0])
     return(res)
@@ -35,13 +35,13 @@ def sm_s(f,n=1):
     
 def sm_i_w(f, val):
     if not isinstance(val, (list,tuple)): val = [val]
-    return(f.write(struct.pack('L'*len(val), *val)))
+    return(f.write(struct.pack('<'+'I'*len(val), *val)))
 def sm_i_short_w(f, val):
     if not isinstance(val, (list,tuple)): val = [val]
-    return(f.write(struct.pack('H'*len(val), *val)))
+    return(f.write(struct.pack('<'+'H'*len(val), *val)))
 def sm_f_w(f, val):
     if not isinstance(val, (list,tuple)): val = [val]
-    return(f.write(struct.pack('f'*len(val), *val)))
+    return(f.write(struct.pack('<'+'f'*len(val), *val)))
 def sm_s_w(f, val):
     return(f.write(bytearray(val.encode())))
 def sm_B_w(f, val):
@@ -236,11 +236,12 @@ class sm_LOD_mesh_material:
             print("Error, vertexFormat is:"+str(self.vertexFormat))
         if not self.renderType in [4,5]:
             print("Error, renderType is:"+str(self.renderType))
-        if  not self.vertexByteSize in [32,40]: #64?
+        if  not self.vertexByteSize in [32,40,64]: # 64: Battlefield Vietnam (extra tangent data)
             print("Error, vertexByteSize is:"+str(self.vertexByteSize))
         return(self)
     def read_2(self,f):
         hasLightmap = self.vertexByteSize in [40]
+        baseVertexByteSize = 40 if hasLightmap else 32
         for Vert_number in range(self.numVertices):
             
             realVert = sm_f(f,3)
@@ -253,6 +254,12 @@ class sm_LOD_mesh_material:
             
             if hasLightmap:
                 self.vertexLightmapUV.append(sm_f(f,2))
+        # Battlefield Vietnam: vertexByteSize 64. The regular 32 byte vertices come first,
+        # followed by a second block of 32 bytes per vertex (8 zero bytes, tangent, binormal).
+        # That block is not needed for import, so skip it to reach the face indices.
+        extraBytes = (self.vertexByteSize - baseVertexByteSize) * self.numVertices
+        if extraBytes > 0:
+            f.seek(extraBytes, 1)
         self.faceValues = sm_i_short(f,self.numFaceValues)
         
         if self.renderType == 5: # "TriangleStrip"
